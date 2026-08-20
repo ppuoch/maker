@@ -14,8 +14,6 @@ from typing import Dict, Optional
 
 log = logging.getLogger(__name__)
 
-# We import the official SDK types at runtime so the package still
-# documents cleanly if the SDK is not yet installed.
 try:
     import loaf
     from loaf import LoafClient
@@ -34,7 +32,7 @@ except ImportError:  # pragma: no cover
 
 @dataclass
 class DesiredQuote:
-    side: str          # BUY / SELL
+    side: str  # BUY / SELL
     price: float
     size: float
 
@@ -97,7 +95,6 @@ class OrderManager:
             return
 
         if not self.risk.allow_quote(self.token, side, size, price):
-            # Risk says no — if we have a live order on the increasing side, cancel it
             inv = self.accounting.inventory(self.token)
             increasing = (side == "BUY" and inv >= 0) or (side == "SELL" and inv <= 0)
             if increasing:
@@ -141,7 +138,9 @@ class OrderManager:
         except Exception as e:
             log.warning("[om] cancel_all (bulk) failed: %s", e)
 
-    def on_ws_order_update(self, order_id: int, status: str, quantity_left: float = 0.0) -> None:
+    def on_ws_order_update(
+        self, order_id: int, status: str, quantity_left: float = 0.0
+    ) -> None:
         """Drive local state from private portfolio WS order events."""
         status_u = (status or "").upper()
         with self._lock:
@@ -159,7 +158,6 @@ class OrderManager:
         with self._lock:
             live = self._live.get(side.upper())
             if live and (order_id is None or live.order_id == order_id):
-                # Leave it; on_ws_order_update will clean up on FILLED
                 pass
 
     def live_snapshot(self) -> Dict[str, dict]:
@@ -178,7 +176,7 @@ class OrderManager:
     # Internal network
     # ------------------------------------------------------------------ #
 
-    d    def _place(self, side: str, price: float, size: float) -> None:
+    def _place(self, side: str, price: float, size: float) -> None:
         self.accounting.record_request()
         t0 = time.monotonic()
         try:
@@ -240,8 +238,6 @@ class OrderManager:
             self.risk.halt(5.0, "connection error")
         except Exception as e:
             log.exception("[om] unexpected place error: %s", e)
-        except Exception as e:
-            log.exception("[om] unexpected place error: %s", e)
 
     def _cancel(self, order_id: int) -> None:
         self.accounting.record_request()
@@ -255,7 +251,6 @@ class OrderManager:
             log.warning("[om] 503 on cancel — treating as gone")
             self._reconcile()
         except Exception as e:
-            # Cancel-on-filled race is common and benign
             msg = str(e).lower()
             if "filled" in msg or "no longer" in msg or "not found" in msg:
                 log.info("[om] cancel race (already gone) %s", order_id)
@@ -271,7 +266,6 @@ class OrderManager:
         self.accounting.record_request()
         try:
             active = self.client.history.active_orders()
-            # active_orders may return a list or an object with .activeOrders
             if hasattr(active, "activeOrders"):
                 orders = active.activeOrders or []
             elif isinstance(active, dict):
@@ -299,6 +293,8 @@ class OrderManager:
                             live.order_id,
                         )
                         self._live.pop(side, None)
-            log.info("[om] reconcile done — %d live on exchange for token", len(live_ids))
+            log.info(
+                "[om] reconcile done — %d live on exchange for token", len(live_ids)
+            )
         except Exception as e:
             log.warning("[om] reconcile failed: %s", e)
