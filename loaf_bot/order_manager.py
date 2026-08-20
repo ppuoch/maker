@@ -178,11 +178,10 @@ class OrderManager:
     # Internal network
     # ------------------------------------------------------------------ #
 
-    def _place(self, side: str, price: float, size: float) -> None:
+    d    def _place(self, side: str, price: float, size: float) -> None:
         self.accounting.record_request()
         t0 = time.monotonic()
         try:
-            # Official SDK handles nonce internally and never auto-retries place
             if side == "BUY":
                 result = self.client.orders.limit_buy(
                     self.token, quantity=size, price=price
@@ -234,12 +233,13 @@ class OrderManager:
             log.error("[om] validation rejected: %s", e)
             if "insufficient" in str(e).lower():
                 self.risk.halt(60.0, "insufficient balance")
-        with self._lock:
-            self._live.pop(side, None)
-            # Do not retry invalid desired state
+                with self._lock:
+                    self._live.pop(side, None)
         except LoafConnectionError as e:
             log.warning("[om] connection error on place: %s", e)
             self.risk.halt(5.0, "connection error")
+        except Exception as e:
+            log.exception("[om] unexpected place error: %s", e)
         except Exception as e:
             log.exception("[om] unexpected place error: %s", e)
 
