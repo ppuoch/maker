@@ -45,7 +45,9 @@ class RiskManager:
             log.warning("[risk] HALT %.0fs — %s", seconds, reason)
 
     def check_account_drawdown(self) -> bool:
-        """Return True if we must kill / flatten."""
+        # Ignore the first 60s while marks/cash settle
+        if time.time() - self.accounting._session_start < 60:
+            return False
         dd = self.accounting.drawdown_pct()
         if dd >= self.config.max_drawdown_pct:
             log.error(

@@ -157,8 +157,9 @@ class PatientMaker:
         # Improve from the touch by the offset (patient: we are not fighting for
         # every queue slot, we are providing size at a competitive distance)
         # For offset=3 we sit 3 ticks inside the current best.
-        my_bid = round(self.best_bid + buy_off, 2) if self.best_bid else 0.0
-        my_ask = round(self.best_ask - sell_off, 2) if self.best_ask else 0.0
+        # Patient: sit at or behind the touch (do not improve into a moving book)
+        my_bid = round(self.best_bid - buy_off, 2) if self.best_bid else 0.0
+        my_ask = round(self.best_ask + sell_off, 2) if self.best_ask else 0.0
 
         if my_bid >= my_ask:
             # Skew pushed us into a cross — fall back to touch
