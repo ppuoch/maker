@@ -194,19 +194,23 @@ class PatientMaker:
 
         return my_bid, my_ask, bid_sz, ask_sz
 
-    def _force_reduce(self, inv: float, mid: float) -> None:
-        if abs(inv) < 0.1:
+    ddef _force_reduce(self, inv: float, mid: float) -> None:
+    inv = self.accounting.inventory(self.token)
+    if abs(inv) < 0.1:
+        return
+    if inv > 0:
+        sz = round(min(max(inv * 0.5, 0.5), self.config.base_size), 1)  # never more than base_size
+        if sz < 0.1:
             return
-        if inv > 0:
-            # Sell to reduce
-            px = round((self.best_bid or mid) - self.config.tick_size, 2)
-            sz = round(min(abs(inv), self.config.base_size * 2), 1)
-            log.warning("[%s] FORCE REDUCE SELL %.1f @ %.2f", self.token, sz, px)
-            self.om.ensure("SELL", px, sz)
-            self.om.cancel_side("BUY")
-        else:
-            px = round((self.best_ask or mid) + self.config.tick_size, 2)
-            sz = round(min(abs(inv), self.config.base_size * 2), 1)
-            log.warning("[%s] FORCE REDUCE BUY %.1f @ %.2f", self.token, sz, px)
-            self.om.ensure("BUY", px, sz)
-            self.om.cancel_side("SELL")
+        px = round((self.best_bid or mid) - self.config.tick_size, 2)
+        log.warning("[%s] FORCE REDUCE SELL %.1f @ %.2f (local_inv=%.2f)", self.token, sz, px, inv)
+        self.om.cancel_side("BUY")
+        self.om.ensure("SELL", px, sz)
+    else:
+        sz = round(min(max(abs(inv) * 0.5, 0.5), self.config.base_size), 1)
+        if sz < 0.1:
+            return
+        px = round((self.best_ask or mid) + self.config.tick_size, 2)
+        log.warning("[%s] FORCE REDUCE BUY %.1f @ %.2f (local_inv=%.2f)", self.token, sz, px, inv)
+        self.om.cancel_side("SELL")
+        self.om.ensure("BUY", px, sz)

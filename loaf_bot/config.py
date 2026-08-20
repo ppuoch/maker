@@ -53,7 +53,7 @@ class BotConfig:
             os.environ.get("LOAF_MAX_POSITION_NOTIONAL", "25000")
         )
     )
-    inventory_time_stop_s: float = 1200.0  # 20 min
+    inventory_time_stop_s: float = 999999.0   # effectively off
     min_notional: float = 12.0  # safety above platform 10 USDL
 
     # Network

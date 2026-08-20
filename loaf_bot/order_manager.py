@@ -232,6 +232,10 @@ class OrderManager:
             self.risk.halt(60.0, str(e))
         except LoafValidationError as e:
             log.error("[om] validation rejected: %s", e)
+            if "insufficient" in str(e).lower():
+                self.risk.halt(60.0, "insufficient balance")
+        with self._lock:
+            self._live.pop(side, None)
             # Do not retry invalid desired state
         except LoafConnectionError as e:
             log.warning("[om] connection error on place: %s", e)
