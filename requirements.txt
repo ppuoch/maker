@@ -1,0 +1,6 @@
+# Official Loaf SDK (install from GitHub)
+# pip install "git+https://github.com/Loaf-Markets/loaf-python-api-bot-template.git"
+
+httpx>=0.27
+websockets>=12.0
+python-dotenv>=1.0
